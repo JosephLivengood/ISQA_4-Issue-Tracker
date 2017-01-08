@@ -60,24 +60,33 @@ module.exports = function (app) {
       var updates = req.body;
       for (var ele in updates) { if (!updates[ele]) { delete updates[ele] } }
       if (updates.open) { updates.open = String(updates.open) == "true" }
-      updates.updated_on = new Date();
-      MongoClient.connect(CONNECTION_STRING, function(err, db) {
-        var collection = db.collection(project);
-        collection.findAndModify({_id:new ObjectId(issue)},[['_id',1]],{$set: updates},{new: true},function(err,doc){
-          (!err) ? res.send('successfully updated') : res.send('could not update '+issue+' '+err); //res.json(doc.value)
-        });
-      });      
+      if (Object.keys(updates).length === 0) {
+        res.send('no updated field sent');
+      } else {
+        updates.updated_on = new Date();
+        MongoClient.connect(CONNECTION_STRING, function(err, db) {
+          var collection = db.collection(project);
+          collection.findAndModify({_id:new ObjectId(issue)},[['_id',1]],{$set: updates},{new: true},function(err,doc){
+            (!err) ? res.send('successfully updated') : res.send('could not update '+issue+' '+err);
+            //console.log(doc.value);
+          });
+        });    
+      }
     })
     
     .delete(function (req, res){
       var project = req.params.project;
       var issue = req.body._id;
-      MongoClient.connect(CONNECTION_STRING, function(err, db) {
-        var collection = db.collection(project);
-        collection.findAndRemove({_id:new ObjectId(issue)},function(err,doc){
-          (!err) ? res.send('deleted '+issue) : res.send('could not delete '+issue+' '+err);
+      if (!issue) {
+        res.send('_id error');
+      } else {
+        MongoClient.connect(CONNECTION_STRING, function(err, db) {
+          var collection = db.collection(project);
+          collection.findAndRemove({_id:new ObjectId(issue)},function(err,doc){
+            (!err) ? res.send('deleted '+issue) : res.send('could not delete '+issue+' '+err);
+          });
         });
-      });      
+      }
     });
     
 };
